@@ -11,3 +11,10 @@ def apply_pop_art(frame, levels=4):
 
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
+
+def apply_posterize(frame, levels=4):
+    step = 255.0 / (levels - 1)
+
+    quantized = np.round(frame / step) * step
+
+    return quantized.astype(np.uint8)
