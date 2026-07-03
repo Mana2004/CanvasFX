@@ -5,6 +5,7 @@ from tkinter import filedialog
 import os
 import datetime
 import  json
+import tkinter as tk
 
 import image_filters.A_color as color_mod
 import image_filters.B_sampling as sampling_mod
@@ -14,12 +15,43 @@ import image_filters.E_texture as texture_mod
 import image_filters.F_ar_filters as ar_mod
 
 
+class FilterDrawer(tk.Frame):
+    def __init__(self, parent, title_text, bg_color="#343A40", fg_color="#F8F9FA"):
+        super().__init__(parent, bg=bg_color)
+        self.is_expanded = False
+        
+        self.header_text = f"▶  {title_text}"
+        self.header_btn = tk.Button(
+            self, text=self.header_text, font=("Helvetica", 10, "bold"), 
+            bg=bg_color, fg=fg_color, anchor="w", relief=tk.FLAT,
+            activebackground="#2c3e50", activeforeground=fg_color,
+            bd=0, cursor="hand2"
+        )
+        self.header_btn.pack(fill=tk.X, pady=(5, 2))
+        
+        self.header_btn.config(command=self.toggle)
+        
+        self.content_frame = tk.Frame(self, bg=bg_color)
+        
+        self.raw_title = title_text
+
+    def toggle(self):
+        if self.is_expanded:
+            self.content_frame.pack_forget()
+            self.header_btn.config(text=f"▶  {self.raw_title}")
+            self.is_expanded = False
+        else:
+            self.content_frame.pack(fill=tk.X, padx=10, pady=2)
+            self.header_btn.config(text=f"▼  {self.raw_title}")
+            self.is_expanded = True
+
+
 class FXCanvas:
     def __init__(self, window, window_title, assets = None):
         self.window = window
         self.window.title(window_title)
         self.assets = assets if assets else {}
-        self.window.geometry("1000x900")
+        self.window.geometry("900x600")
         self.window.configure(bg="#2c3e50")
 
         self.current_filter_name = None
@@ -41,8 +73,14 @@ class FXCanvas:
         self.sidebar = tk.Frame(self.window, width=280, bg="#343A40", padx=10, pady=10)
         self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
 
-        self.display_panel = tk.Label(self.window, bg="#212529")
-        self.display_panel.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH)
+        right_container = tk.Frame(self.window, bg="#212529")
+        right_container.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH)
+
+        self.display_panel = tk.Label(right_container, bg="#212529")
+        self.display_panel.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
+
+        control_bar = tk.Frame(right_container, bg="#212529", height=80)
+        control_bar.pack(side=tk.BOTTOM, fill=tk.X, pady=15)
 
         title = tk.Label(self.sidebar, text="CanvasFX", font=("Helvetica", 16, "bold"), bg="#343A40", fg="#ecf0f1")
         title.pack(pady=10)
@@ -86,20 +124,23 @@ class FXCanvas:
                               font=("Helvetica", 10, "bold"), width=25, height=2)
         clear_btn.pack(side=tk.BOTTOM, pady=(10, 5))
 
-        self.capture_btn = tk.Button(self.display_panel, text="Capture", command=self.capture_photo,
-                                     bg="#e74c3c", fg="white", font=("Helvetica", 14, "bold"),
-                                     padx=20, pady=10, relief=tk.RAISED, borderwidth=3)
-        self.capture_btn.place(relx=0.5, rely=0.95, anchor=tk.S)
+        self.capture_btn = tk.Button(control_bar, text="Capture", command=self.capture_photo,
+                                     bg="#4e6187", fg="white", font=("Helvetica", 14, "bold"),
+                                     padx=25, pady=8, relief=tk.RAISED, borderwidth=1)
+        self.capture_btn.pack(side=tk.TOP)
 
     def create_category_section(self, label_text, filter_list):
-        lbl = tk.Label(self.sidebar, text=label_text, font=("Helvetica", 10, "bold"), bg="#343A40", fg="#F8F9FA",
-                       anchor="w")
-        lbl.pack(fill=tk.X, pady=(10, 2))
+        drawer = FilterDrawer(self.sidebar, label_text, bg_color="#343A40")
+        drawer.pack(fill=tk.X, pady=2)
 
         for name, func in filter_list:
-            btn = tk.Button(self.sidebar, text=name, command=lambda f=func, n=name: self.set_filter(n, f),
-                            bg="#343A40", fg="#ecf0f1", relief=tk.FLAT, activebackground="#16a085")
-            btn.pack(fill=tk.X, padx=10, pady=1)
+            btn = tk.Button(
+                drawer.content_frame, text=name, 
+                command=lambda f=func, n=name: self.set_filter(n, f),
+                bg="#343A40", fg="#ecf0f1", relief=tk.FLAT, 
+                activebackground="#9f9f9f", anchor="w"
+            )
+            btn.pack(fill=tk.X, padx=5, pady=1)
 
     def set_filter(self, name, filter_func):
         self.current_filter_name = name
@@ -153,7 +194,7 @@ class FXCanvas:
         cv2.imwrite(filepath, self.current_processed_frame)
         print(f"SNAP! Saved to: {filepath}")
 
-        self.capture_btn.configure(bg="#2ecc71", text="Saved!")
+        self.capture_btn.configure(bg="#e7e7e7", text="Saved!")
         self.window.after(1000, lambda: self.capture_btn.configure(bg="#e74c3c", text="Capture"))
 
     def load_config(self):
