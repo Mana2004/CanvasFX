@@ -33,10 +33,9 @@ def main():
     print("Loading assets...")
     loaded_assets = load_assets()
 
-    app = FXCanvas(root, "Computer Vision & Mathematical Engine V2", assets=loaded_assets)
+    app = FXCanvas(root, "CanvasFX V1.0", assets=loaded_assets)
 
     root.mainloop()
-
 
 if __name__ == "__main__":
     main()
