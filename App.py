@@ -7,6 +7,7 @@ import datetime
 import  json
 import tkinter as tk
 
+from MediaBridge import MediaBridge
 import image_filters.A_color as color_mod
 import image_filters.B_sampling as sampling_mod
 import image_filters.C_color_quantization as quant_mod
@@ -57,7 +58,8 @@ class FXCanvas:
         self.current_filter_name = None
         self.current_filter_func = None
 
-        self.vid = cv2.VideoCapture(0)
+        self.bridge = MediaBridge(source_type="webcam", path=0)
+        #self.vid = cv2.VideoCapture(0)
         self.assets_dir = "./assets"
 
         self.save_directory = None
@@ -68,6 +70,7 @@ class FXCanvas:
 
         self.setup_ui()
         self.update_frame()
+
 
     def setup_ui(self):
         self.sidebar = tk.Frame(self.window, width=280, bg="#343A40", padx=10, pady=10)
@@ -116,18 +119,26 @@ class FXCanvas:
             ("AR Butterfly", lambda f: ar_mod.apply_ar_prop(f, self.assets.get("butterfly"), "butterfly"))
         ])
 
-        settings_btn = tk.Button(self.sidebar, text="⚙️ Set Save Folder", command=self.change_save_folder,
-                                 bg="#34495e", fg="white", font=("Helvetica", 10, "bold"), width=25, height=1)
+        settings_btn = tk.Button(self.sidebar, text="⚙️ Set Save Folder", command=self.change_save_folder,bg="#4e6187", fg="white", 
+                                font=("Helvetica", 10, "bold"), 
+                                width=25, height=1, relief=tk.FLAT, cursor="hand2")
         settings_btn.pack(side=tk.BOTTOM, pady=(0, 10))
 
         clear_btn = tk.Button(self.sidebar, text="Reset Image", command=self.clear_filter, bg="#769edb", fg="white",
-                              font=("Helvetica", 10, "bold"), width=25, height=2)
-        clear_btn.pack(side=tk.BOTTOM, pady=(10, 5))
+                              font=("Helvetica", 10, "bold"), 
+                              width=25, height=2, relief=tk.FLAT, cursor="hand2")
+        clear_btn.pack(side=tk.BOTTOM, pady=(5, 5))
 
-        self.capture_btn = tk.Button(control_bar, text="Capture", command=self.capture_photo,
-                                     bg="#4e6187", fg="white", font=("Helvetica", 14, "bold"),
-                                     padx=25, pady=8, relief=tk.RAISED, borderwidth=1)
+        import_btn = tk.Button(self.sidebar, text="Import Photo", command=self.import_photo,bg="#769edb", fg="white", 
+                               font=("Helvetica", 10, "bold"), 
+                               width=25, height=2, relief=tk.FLAT, cursor="hand2")
+        import_btn.pack(side=tk.BOTTOM, pady=(10, 0))
+
+        self.capture_btn = tk.Button(control_bar, text="Capture", command=self.capture_photo,bg="#4e6187", fg="white", 
+                                    font=("Helvetica", 14, "bold"),
+                                    padx=25, pady=8, relief=tk.FLAT, borderwidth=1, cursor="hand2")
         self.capture_btn.pack(side=tk.TOP)
+
 
     def create_category_section(self, label_text, filter_list):
         drawer = FilterDrawer(self.sidebar, label_text, bg_color="#343A40")
@@ -142,17 +153,21 @@ class FXCanvas:
             )
             btn.pack(fill=tk.X, padx=5, pady=1)
 
+
     def set_filter(self, name, filter_func):
         self.current_filter_name = name
         self.current_filter_func = filter_func
+
 
     def clear_filter(self):
         self.current_filter_name = None
         self.current_filter_func = None
 
+
     def update_frame(self):
-        ret, frame = self.vid.read()
-        if ret:
+        frame = self.bridge.get_frame() 
+        
+        if frame is not None:
             if self.current_filter_name and self.current_filter_func:
                 try:
                     frame = self.current_filter_func(frame)
@@ -170,12 +185,30 @@ class FXCanvas:
 
         self.window.after(15, self.update_frame)
 
+
+    def import_photo(self):
+        file_path = filedialog.askopenfilename(
+            title="Select a Photo to Edit",
+            filetypes=[("Image files", "*.jpg *.jpeg *.png *.bmp")]
+        )
+        
+        if file_path:
+            if hasattr(self, 'bridge') and self.bridge:
+                self.bridge.release()
+            
+            self.bridge = MediaBridge(source_type="photo", path=file_path)
+            print(f"Successfully loaded static image: {file_path}")
+            
+            self.clear_filter()
+    
+
     def change_save_folder(self):
         selected_dir = filedialog.askdirectory(title="Select Folder to Save Photos")
         if selected_dir:
             self.save_directory = selected_dir
             print(f"Save directory updated to: {self.save_directory}")
             self.save_config()
+
 
     def capture_photo(self):
         if self.current_processed_frame is None:
@@ -197,6 +230,7 @@ class FXCanvas:
         self.capture_btn.configure(bg="#e7e7e7", text="Saved!")
         self.window.after(1000, lambda: self.capture_btn.configure(bg="#e74c3c", text="Capture"))
 
+
     def load_config(self):
         if os.path.exists(self.config_file):
             try:
@@ -210,6 +244,7 @@ class FXCanvas:
                 print(f"Error loading config file: {e}")
         return None
 
+
     def save_config(self):
         try:
             config_data = {"save_directory": self.save_directory}
@@ -220,5 +255,5 @@ class FXCanvas:
             print(f"Error saving config file: {e}")
 
     def __del__(self):
-        if hasattr(self, 'vid') and self.vid.isOpened():
-            self.vid.release()
+        if hasattr(self, 'bridge') and self.bridge:
+            self.bridge.release()
