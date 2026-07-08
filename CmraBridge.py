@@ -1,20 +1,23 @@
 import cv2
 
 
-class MediaBridge:
+class CmraBridge:
     def __init__(self, source_type="webcam", path=0):
         self.source_type = source_type
         self.static_image = None
 
-        if source_type == "webcam" or source_type == "video":
+        if source_type == "webcam":
             self.cap = cv2.VideoCapture(path)
             if not self.cap.isOpened():
-                raise RuntimeError(f"Source access failure for identifier: {path}")
+                raise RuntimeError(f"Source access failure for webcam index: {path}")
+
             success, test_frame = self.cap.read()
             if not success:
-                raise RuntimeError("Empty stream package returned from driver.")
+                raise RuntimeError("Empty stream package returned from webcam driver.")
             self.height, self.width = test_frame.shape[:2]
+
         elif source_type == "photo":
+            # Load static image asset from disk
             self.static_image = cv2.imread(path)
             if self.static_image is None:
                 raise RuntimeError(f"Disk read error at address: {path}")
@@ -27,13 +30,8 @@ class MediaBridge:
         success, frame = self.cap.read()
         if success:
             return frame
-        elif self.source_type == "video":
-            # Rewind video clip in a recursive circle loop
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            _, frame = self.cap.read()
-            return frame
         return None
 
     def release(self):
-        if self.source_type in ["webcam", "video"] and hasattr(self, 'cap'):
+        if self.source_type == "webcam" and hasattr(self, 'cap'):
             self.cap.release()
