@@ -50,6 +50,7 @@ def apply_pop_art(frame, dot_size=4):
     Y_out = halftone_channel(Y, 0, low_t=0.15, high_t=0.55)  # Yellow triggers easily (for hair/lights)
     K_out = halftone_channel(K, 45, low_t=0.4, high_t=0.8)
 
+    #edges
     gray = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
 
     edges = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,

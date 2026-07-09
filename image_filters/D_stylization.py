@@ -18,7 +18,8 @@ def apply_pencil_sketch(frame, ksize=31, dynamic_range=1.8, shadow_bias=1.4):
     lines = cv2.divide(gray_sharp, 255 - blurred, scale=256.0)
     lines_norm = lines.astype(np.float32) / 255.0
 
-    stroke_kernel_size = 15
+    #noise
+    stroke_kernel_size = 20
     kernel = np.zeros((stroke_kernel_size, stroke_kernel_size), dtype=np.float32)
     np.fill_diagonal(kernel, 1.0)
     kernel /= stroke_kernel_size

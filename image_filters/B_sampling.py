@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 
-def apply_pixel_art(frame, pixel_size=6, total_colors=8):
+def apply_pixel_art(frame, pixel_size=6, total_colors=20):
 
     h, w = frame.shape[:2]
 
@@ -14,7 +14,7 @@ def apply_pixel_art(frame, pixel_size=6, total_colors=8):
     data = low_res_lab.reshape((-1, 3)).astype(np.float32)
 
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    _, labels, centers = cv2.kmeans(data, total_colors, None, criteria, 5, cv2.KMEANS_PP_CENTERS)
+    _, labels, centers = cv2.kmeans(data, total_colors, None, criteria, 20, cv2.KMEANS_PP_CENTERS)
 
     quantized_lab = centers[labels.flatten()].reshape(low_res.shape).astype(np.uint8)
 
@@ -22,6 +22,7 @@ def apply_pixel_art(frame, pixel_size=6, total_colors=8):
 
     pixelated_bg = cv2.resize(quantized_bgr, (w, h), interpolation=cv2.INTER_NEAREST)
 
+    #edges
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     blurred_gray = cv2.GaussianBlur(gray, (5, 5), 0)
 
